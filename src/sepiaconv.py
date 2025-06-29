@@ -50,6 +50,18 @@ def image_to_sepia(im):
     im = Image.fromarray(im, 'RGB')
     return im
 
+def single_threading(chunks, rows, target_im):
+    x,y = (0,0)
+    for i in range(len(chunks)):
+        chunk = chunks[i]
+        sepia = image_to_sepia(chunk)
+        target_im.paste(sepia, (x,y))
+
+        x += chunk.width
+        if (i+1)%rows == 0:
+            x = 0
+            y += chunk.height
+
 def main():
     argv = sys.argv
     argc = len(argv)
@@ -62,20 +74,10 @@ def main():
 
     subdivs = 1
     rows = subdivs+1
-    x,y = (0,0)
-
-    newim = Image.new("RGB", im.size)
     chunks = chunkify(im, subdivs)
 
-    for i in range(len(chunks)):
-        chunk = chunks[i]
-        sepia = image_to_sepia(chunk)
-        newim.paste(sepia, (x,y))
-
-        x += chunk.width
-        if (i+1)%rows == 0:
-            x = 0
-            y += chunk.height
+    newim = Image.new("RGB", im.size)
+    single_threading(chunks, rows, newim)
 
     newim.save("out.jpg")
 
