@@ -1,4 +1,5 @@
 import sys
+import threading
 from PIL import Image
 import numpy as np
 
@@ -22,7 +23,7 @@ def pixel_to_sepia(rgb):
     return [newRed, newGreen, newBlue]
 
 # Divide image into chunks of smaller size
-def chunkify(im, subdivs=2):
+def chunkify(im, subdivs):
     cells = (subdivs+1)**2
     width = im.width//(subdivs+1)
     height = im.height//(subdivs+1)
@@ -50,17 +51,16 @@ def image_to_sepia(im):
     im = Image.fromarray(im, 'RGB')
     return im
 
-def single_threading(chunks, rows, target_im):
-    x,y = (0,0)
-    for i in range(len(chunks)):
-        chunk = chunks[i]
-        sepia = image_to_sepia(chunk)
-        target_im.paste(sepia, (x,y))
+def chunk_processor(target_im):
+    while True:
+        with lock:
+            if len(data) == 0: break
+            chunk, pos = data.pop()
 
-        x += chunk.width
-        if (i+1)%rows == 0:
-            x = 0
-            y += chunk.height
+        sepia = image_to_sepia(chunk)
+
+        with lock:
+            target_im.paste(sepia, pos)
 
 def main():
     argv = sys.argv
@@ -72,14 +72,37 @@ def main():
 
     im = load_image(argv[1])
 
-    subdivs = 1
+    subdivs = 3
     rows = subdivs+1
     chunks = chunkify(im, subdivs)
 
     newim = Image.new("RGB", im.size)
-    single_threading(chunks, rows, newim)
+
+    threads = []
+    for i in range(1):
+        t = threading.Thread(target=chunk_processor, args=(newim,))
+        threads.append(t)
+
+    x,y = (0,0)
+    for i in range(len(chunks)):
+        chunk = chunks[i]
+        data.append((chunk.copy(), (x,y)))
+
+        x += chunk.width
+        if (i+1)%rows == 0:
+            x = 0
+            y += chunk.height
+
+    for t in threads:
+        t.start()
+
+    for t in threads:
+        t.join()
 
     newim.save("out.jpg")
+
+lock = threading.Lock()
+data = []
 
 if __name__ == '__main__':
     main()
