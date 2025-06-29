@@ -48,9 +48,7 @@ def main():
     im = loadimage(argv[1])
     newim = imagetosepia(im)
 
-    # TODO: save output to a file
-
-    newim.show()
+    newim.save("out.jpg")
 
 if __name__ == '__main__':
     main()
