@@ -68,7 +68,6 @@ def main():
     chunks = chunkify(im, subdivs)
 
     for i in range(len(chunks)):
-        print(i)
         chunk = chunks[i]
         sepia = image_to_sepia(chunk)
         newim.paste(sepia, (x,y))
