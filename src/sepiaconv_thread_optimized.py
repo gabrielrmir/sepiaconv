@@ -5,9 +5,11 @@ from PIL import Image
 import numpy as np
 
 def usage():
+    """Exibe a mensagem de uso do programa."""
     print("Usage: sepiaconv.py <file> --threads <num_threads> --subdivs <num_subdivs>")
 
 def load_image(filename):
+    """Carrega a imagem do arquivo especificado."""
     try:
         im = Image.open(filename)
     except Exception as e:
@@ -16,15 +18,26 @@ def load_image(filename):
     return im
 
 def pixel_to_sepia_array(arr):
-    """Apply sepia filter to an image array using vectorized operations."""
-    r, g, b = arr[:, :, 0], arr[:, :, 1], arr[:, :, 2]
-    new_red = np.minimum((0.393 * r + 0.769 * g + 0.189 * b).astype(np.int32), 255)
-    new_green = np.minimum((0.349 * r + 0.686 * g + 0.168 * b).astype(np.int32), 255)
-    new_blue = np.minimum((0.272 * r + 0.534 * g + 0.131 * b).astype(np.int32), 255)
+    """
+    Aplica o filtro sépia a um array de imagem usando operações vetorizadas.
+    O array de entrada tem formato (altura, largura, 3), onde a última dimensão
+    representa os canais RGB: 0=vermelho, 1=verde, 2=azul.
+    """
+    # Extrai os canais de cor individuais
+    red_channel = arr[:, :, 0]  # Todos os pixels, canal vermelho (índice 0)
+    green_channel = arr[:, :, 1]  # Todos os pixels, canal verde (índice 1)
+    blue_channel = arr[:, :, 2]  # Todos os pixels, canal azul (índice 2)
+
+    # Aplica a transformação sépia
+    new_red = np.minimum((0.393 * red_channel + 0.769 * green_channel + 0.189 * blue_channel).astype(np.int32), 255)
+    new_green = np.minimum((0.349 * red_channel + 0.686 * green_channel + 0.168 * blue_channel).astype(np.int32), 255)
+    new_blue = np.minimum((0.272 * red_channel + 0.534 * green_channel + 0.131 * blue_channel).astype(np.int32), 255)
+
+    # Combina os novos canais em um array 3D
     return np.stack([new_red, new_green, new_blue], axis=2)
 
 def chunkify(im, subdivs):
-    """Divide image into chunks."""
+    """Divide a imagem em pedaços menores."""
     cells = (subdivs + 1) ** 2
     width = im.width // (subdivs + 1)
     height = im.height // (subdivs + 1)
@@ -40,13 +53,13 @@ def chunkify(im, subdivs):
     return chunks, positions
 
 def image_to_sepia(im):
-    """Convert a chunk to sepia using vectorized operations."""
+    """Converte um pedaço da imagem para sépia usando operações vetorizadas."""
     arr = np.asarray(im, dtype=np.float32)
     sepia_arr = pixel_to_sepia_array(arr)
     return Image.fromarray(sepia_arr.astype(np.uint8), "RGB")
 
 def chunk_processor(target_im):
-    """Process chunks in a thread-safe manner."""
+    """Processa pedaços da imagem de forma segura para threads."""
     while True:
         with lock:
             if not data:
@@ -57,10 +70,11 @@ def chunk_processor(target_im):
             target_im.paste(sepia, pos)
 
 def main():
-    parser = argparse.ArgumentParser(description="Convert an image to sepia using threads.")
-    parser.add_argument("filename", help="Input image file")
-    parser.add_argument("--threads", type=int, default=4, help="Number of threads to use")
-    parser.add_argument("--subdivs", type=int, default=3, help="Number of subdivisions per axis")
+    """Função principal que coordena o processamento da imagem."""
+    parser = argparse.ArgumentParser(description="Converte uma imagem para sépia usando threads.")
+    parser.add_argument("filename", help="Arquivo de imagem de entrada")
+    parser.add_argument("--threads", type=int, default=4, help="Número de threads a usar")
+    parser.add_argument("--subdivs", type=int, default=3, help="Número de subdivisões por eixo")
     args = parser.parse_args()
 
     im = load_image(args.filename)
@@ -90,4 +104,3 @@ data = []
 
 if __name__ == "__main__":
     main()
-
