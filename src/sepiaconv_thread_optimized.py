@@ -3,6 +3,7 @@ import threading
 import argparse
 from PIL import Image
 import numpy as np
+import os
 
 def usage():
     """Exibe a mensagem de uso do programa."""
@@ -96,8 +97,9 @@ def main():
     for t in threads:
         t.join()
 
-    newim.save("out.jpg")
-    print("Image saved as out.jpg")
+    output_filename = "output_" + os.path.basename(args.filename)
+    newim.save(output_filename)
+    print("Image saved as \"" + output_filename + "\"")
 
 lock = threading.Lock()
 data = []

@@ -2,7 +2,7 @@ import sys
 import threading
 from PIL import Image
 import numpy as np
-
+import os
 
 def usage():
     print("Usage: sepiaconv.py <file>")
@@ -107,8 +107,8 @@ def main():
     for t in threads:
         t.join()
 
-    newim.save("out.jpg")
-
+    output_filename = "output_" + os.path.basename(argv[1])
+    newim.save(output_filename)
 
 lock = threading.Lock()
 data = []
